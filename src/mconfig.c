@@ -52,6 +52,7 @@ void mconfig_defaults(struct MConfig* cfg)
 	cfg->tap_2touch = DEFAULT_TAP_2TOUCH;
 	cfg->tap_3touch = DEFAULT_TAP_3TOUCH;
 	cfg->tap_4touch = DEFAULT_TAP_4TOUCH;
+	cfg->tap_min = 30;
 	cfg->tap_timeout = DEFAULT_TAP_TIMEOUT;
 	cfg->tap_hold = DEFAULT_TAP_HOLD;
 	cfg->tap_dist = DEFAULT_TAP_DIST;
@@ -214,6 +215,7 @@ void mconfig_configure(struct MConfig* cfg,
 	cfg->tap_3touch = CLAMPVAL(xf86SetIntOption(opts, "TapButton3", DEFAULT_TAP_3TOUCH), 0, 32);
 	cfg->tap_4touch = CLAMPVAL(xf86SetIntOption(opts, "TapButton4", DEFAULT_TAP_4TOUCH), 0, 32);
 	cfg->tap_hold = MAXVAL(xf86SetIntOption(opts, "ClickTime", DEFAULT_TAP_HOLD), 1);
+	cfg->tap_min = MAXVAL(xf86SetIntOption(opts, "MinTapTime", 30), 1);
 	cfg->tap_timeout = MAXVAL(xf86SetIntOption(opts, "MaxTapTime", DEFAULT_TAP_TIMEOUT), 1);
 	cfg->tap_dist = MAXVAL(xf86SetIntOption(opts, "MaxTapMove", DEFAULT_TAP_DIST), 1);
 	cfg->gesture_hold = MAXVAL(xf86SetIntOption(opts, "GestureClickTime", DEFAULT_GESTURE_HOLD), 1);

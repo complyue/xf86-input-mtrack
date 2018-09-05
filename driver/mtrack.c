@@ -403,7 +403,6 @@ static int can_start_coasting(struct MTouch *mt)
 	int i;
 
 	if(mt->cfg.scroll_smooth && mt->cfg.scroll_coast.duration > 0 &&
-		 mt->cfg.scroll_coast.duration > 0 &&
 		 hypot_cmpf(gs->scroll_speed_x, gs->scroll_speed_y, mt->cfg.scroll_coast.min_speed) == 1)
 	{
 		foreach_bit(i, ms->touch_used) {

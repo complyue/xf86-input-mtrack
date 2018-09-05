@@ -389,6 +389,7 @@ static void abort_tapping(struct Gestures* gs, struct MTState* ms){
 	gs->tap_touching = 0;
 	gs->tap_released = 0;
 	timerclear(&gs->tap_timeout);
+	timerclear(&gs->tap_after);
 
 	foreach_bit(i, ms->touch_used) {
 		CLEARBIT(ms->touch[i].flags, MT_TAP);
@@ -470,6 +471,7 @@ static void tapping_update(struct Gestures* gs,
 			if(gs->tap_touching == 1){ /* That was first touch, start timer */
 				LOG_TAP("tapping_update: start new tap; timeout=%d\n", cfg->tap_timeout);
 				timeraddms(&gs->time, cfg->tap_timeout, &gs->tap_timeout);
+				timeraddms(&gs->time, cfg->tap_min, &gs->tap_after);
 			}
 		}
 
@@ -496,7 +498,12 @@ static void tapping_update(struct Gestures* gs,
 	}
 
 	switch(final_touch_count){
-	case 1: button = cfg->tap_1touch - 1; break;
+	case 1:
+		if (timercmp(&gs->time, &gs->tap_after, <)) {
+			/* single tap not sustained long enough, do not regard as button click */
+			return;
+		}
+			button = cfg->tap_1touch - 1; break;
 	case 2: button = cfg->tap_2touch - 1; break;
 	case 3: button = cfg->tap_3touch - 1; break;
 	case 4: button = cfg->tap_4touch - 1; break;
@@ -628,6 +635,8 @@ static int trigger_swipe_unsafe(struct Gestures* gs,
 	int dir;
 	struct timeval tv_tmp;
 
+	int move_type_before = gs->move_type;
+
 	if (touches_count <= 0)
 		return 0;
 	/** Is that kind of scroll enabled? */
@@ -644,6 +653,7 @@ static int trigger_swipe_unsafe(struct Gestures* gs,
 	}
 
 	trigger_drag_stop(gs, cfg);
+
 	get_swipe_avg_xy(touches, touches_count, &avg_move_x, &avg_move_y);
 	// hypot(1/n * (x0 + ... + xn); 1/n * (y0 + ... + yn)) <=> 1/n * hypot(x0 + ... + xn; y0 + ... + yn)
 	dist = hypot(avg_move_x, avg_move_y);
@@ -653,6 +663,12 @@ static int trigger_swipe_unsafe(struct Gestures* gs,
 	} else{
 		gs->move_dx = gs->move_dy = 0.0;
 	}
+
+	if(move_type_before >= GS_SWIPE2 && move_type_before <= GS_SWIPE4
+		&& move_type_before > move_type_to_trigger) {
+		/* higher order swipe undergoing, keep that */
+	} else 
+
 	if (gs->move_type != move_type_to_trigger){
 		trigger_delayed_button_uncond(gs);
 		gs->move_dist = 0;
@@ -702,6 +718,13 @@ static int trigger_swipe_unsafe(struct Gestures* gs,
 		else
 			timerclear(&tv_tmp); // wait for gesture end
 		gs->move_dist = MODVAL(gs->move_dist, cfg_swipe->dist);
+
+		if(move_type_before >= GS_SWIPE2 && move_type_before <= GS_SWIPE4
+			&& move_type_before > move_type_to_trigger) {
+			/* already undergoing a higher order swipe, keep that and no more clicks */
+			gs->move_type = move_type_before;
+		} else 
+
 		trigger_button_click(gs, button - 1, &tv_tmp);
 	}
 	LOG_DEBUG_GESTURES("trigger_swipe_button: swiping %f in direction %d (at %f of %d)\n",
@@ -744,6 +767,11 @@ static int trigger_swipe(struct Gestures* gs,
 		break;
 	default:
 		goto not_a_swipe;
+	}
+
+	// do not trigger lower order swipe if higher one on the go
+	if(move_type_to_trigger < gs->move_type) {
+		return 1;
 	}
 
 	if (can_change_gesture_type(gs, move_type_to_trigger) || can_transit_swipe != FALSE){
@@ -827,6 +855,9 @@ static int can_trigger_hold_move(const struct Gestures* gs,
 				const struct Touch* touches[DIM_TOUCHES], int touches_count,
 				const struct MConfig* cfg, int max_move)
 {
+	/* disable hold move altogether*/
+	return 0;
+
 	struct timeval tv_tmp;
 
 	if (touches_count <= 1)
@@ -881,6 +912,9 @@ static int is_hold_move(struct Gestures* gs)
 static int trigger_hold_move(struct Gestures* gs,
 			const struct MConfig* cfg, const struct Touch* touches[DIM_TOUCHES], int touches_count)
 {
+	/* disable hold move altogether*/
+	return 0;
+
 	int move_type_to_trigger;
 	const struct MConfigSwipe* cfg_swipe;
 	int stationary_max_move, stationary_btn;
@@ -991,6 +1025,9 @@ static int calc_scale_dir(const struct Touch* t0, const struct Touch* t1){
 
 static int trigger_scale(struct Gestures* gs, const struct MConfig* cfg,
 													const struct Touch* t0, const struct Touch* t1){
+	/* disable scale altogether*/
+	return 0;
+
 	double d0, d1, angles_diff, max_error;
 	int dir;
 	int dist;
@@ -1056,6 +1093,9 @@ static void trigger_rotate(struct Gestures* gs,
 			const struct MConfig* cfg,
 			double dist, int dir)
 {
+	/* disable rotate altogether*/
+	return;
+
 	if (gs->move_type == GS_ROTATE || !timercmp(&gs->time, &gs->move_wait, <)) {
 		struct timeval tv_tmp;
 		trigger_drag_stop(gs, cfg);
@@ -1094,6 +1134,9 @@ static void trigger_reset(struct Gestures* gs)
 static int get_rotate_dir(const struct Touch* t1,
 			const struct Touch* t2)
 {
+	/* disable rotate altogether */
+	return TR_NONE;
+
 	double v, d1, d2;
 	v = trig_direction(t2->x - t1->x, t2->y - t1->y);
 	d1 = trig_angles_add(v, 2);
@@ -1257,6 +1300,8 @@ int gestures_delayed(struct MTouch* mt)
 	// if there's no delayed button - do nothing
 	if(!IS_VALID_BUTTON(gs->button_delayed))
 		return MT_TIMER_NONE;
+
+	if(fingers_down <= 0) /* only release when all fingers released */
 
 	/* Condition: was finger released and gesture is 'infinite' and it's not hold&move */
 	if(fingers_released != 0 && is_timer_infinite(gs) && !is_hold_move(gs)){

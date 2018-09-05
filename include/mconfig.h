@@ -171,6 +171,7 @@ struct MConfig {
 	int tap_2touch;			// What button to emulate for two touch taps? 0 to 32
 	int tap_3touch;			// What button to emulate for three touch taps? 0 to 32
 	int tap_4touch;			// What button to emulate for four touch taps? 0 to 32
+	int tap_min;			// Minimum time a single finger touched to be regarded as tap
 	int tap_timeout;		// Window for touches when counting for the button.
 							// How long to wait for incoming touches after first one. > 0
 	int tap_hold;			// How long to "hold down" the emulated button on tap. > 0
