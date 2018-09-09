@@ -401,6 +401,63 @@ static void abort_tapping(struct Gestures* gs, struct MTState* ms){
 #define LOG_TAP(...)
 #endif
 
+static int invalid_tap_touches(const int bah, const struct MTState* ms, const struct MConfig* cfg) {
+// BoxAreaHeight for taps
+//   0 will limit tap finger only in a centered triangle area;
+// 100 will disable this feature leaving tap valid anywhere.
+/************************* ---
+ *@@@@@@@@*     *@@@@@@@@*  |
+ *@@@@@*           *@@@@@*  |<-- (@ area invalid for tap)
+ *@@*                 *@@*  |
+ *                       * ---
+ *                       *  |
+ *                       *  |<-- (height of box area)
+ *                       *  |
+ ************************* --- */
+
+	int invalid_tap_cnt = 0;
+	int i;
+	const struct Touch* t;
+	int w,h,m,x,y,my;
+
+	if(bah >= 100) {
+		return 0;
+	}
+
+	w = cfg->pad_width;
+	h = cfg->pad_height;
+	m = h - h*bah/100;
+	foreach_bit(i, ms->touch_used) {
+		t = ms->touch + i;
+		if (!GETBIT(t->flags, MT_TAP)) {
+			continue;
+		}
+
+		/* Translate back origin from center of the device to top left. */
+		x = t->x + w/2;
+		y = t->y + h/2;
+
+		if(y >= m) {
+			// in box area
+			continue;
+		}
+
+		if(t->x < 0) {
+			// in left triangle area
+			my = (w/2-x) * m * 2 / w;
+		} else {
+			// in right triangle area
+			my = (x-w/2) * m * 2 / w;
+		}
+
+		if(y < my) {
+			invalid_tap_cnt++;
+		}
+	}
+
+	return invalid_tap_cnt;
+}
+
 static void tapping_update(struct Gestures* gs,
 			const struct MConfig* cfg,
 			struct MTState* ms)
@@ -496,15 +553,28 @@ static void tapping_update(struct Gestures* gs,
 	}
 
 	switch(final_touch_count){
-	case 1: button = cfg->tap_1touch - 1; break;
-	case 2: button = cfg->tap_2touch - 1; break;
-	case 3: button = cfg->tap_3touch - 1; break;
+	case 1:
+		if(invalid_tap_touches(cfg->tap_1bah, ms, cfg) < 1) {
+			button = cfg->tap_1touch - 1;
+		}
+		break;
+	case 2:
+		// tap is valid if at least 1 finger is in valid area
+		if(invalid_tap_touches(cfg->tap_2bah, ms, cfg) < 2) {
+			button = cfg->tap_2touch - 1;
+		}
+		break;
+	case 3:
+		// tap is valid if at least 1 finger is in valid area
+		if(invalid_tap_touches(cfg->tap_3bah, ms, cfg) < 3) {
+			button = cfg->tap_2touch - 1;
+		}
+		break;
 	case 4: button = cfg->tap_4touch - 1; break;
 	default:
 		LOG_TAP("tapping_update: Something went really bad; final_touch_count=%d\n", final_touch_count);
 		button = cfg->tap_4touch - 1;
 	}
-
 	timeraddms(&gs->time, cfg->tap_hold, &tv_tmp); /* How long button should be hold down */
 	trigger_button_click(gs, button, &tv_tmp);
 	if (cfg->drag_enable && button == 0)
