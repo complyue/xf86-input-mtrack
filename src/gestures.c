@@ -567,7 +567,7 @@ static void tapping_update(struct Gestures* gs,
 	case 3:
 		// tap is valid if at least 1 finger is in valid area
 		if(invalid_tap_touches(cfg->tap_3bah, ms, cfg) < 3) {
-			button = cfg->tap_2touch - 1;
+			button = cfg->tap_3touch - 1;
 		}
 		break;
 	case 4: button = cfg->tap_4touch - 1; break;
