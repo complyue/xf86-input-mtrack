@@ -571,6 +571,12 @@ static void tapping_update(struct Gestures* gs,
 			// all fingers out of valid tap area
 			break;
 		}
+		if (!isepochtime(&gs->tap2_before)) {
+			if (timercmp(&gs->time, &gs->tap2_before, >)) {
+				// too long since last movement
+				break;
+			}
+		} 
 		button = cfg->tap_2touch - 1;
 		break;
 	case 3:
@@ -578,6 +584,12 @@ static void tapping_update(struct Gestures* gs,
 			// all fingers out of valid tap area
 			break;
 		}
+		if (!isepochtime(&gs->tap3_before)) {
+			if (timercmp(&gs->time, &gs->tap3_before, >)) {
+				// too long since last movement
+				break;
+			}
+		} 
 		button = cfg->tap_3touch - 1;
 		break;
 	case 4: button = cfg->tap_4touch - 1; break;
