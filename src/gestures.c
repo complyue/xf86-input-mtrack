@@ -42,6 +42,18 @@
 
 #define IS_VALID_BUTTON(x) (x >= 0 && x <= 31)
 
+static void update_tap_befores(struct Gestures* gs, const struct MConfig* cfg) {
+	if (cfg->tap_1actin > 0) {
+		timeraddms(&gs->time, cfg->tap_1actin, &gs->tap1_before);
+	}
+	if (cfg->tap_2actin > 0) {
+		timeraddms(&gs->time, cfg->tap_2actin, &gs->tap2_before);
+	}
+	if (cfg->tap_3actin > 0) {
+		timeraddms(&gs->time, cfg->tap_3actin, &gs->tap3_before);
+	}
+}
+
 static void break_coasting(struct Gestures* gs){
 	gs->scroll_speed_x = gs->scroll_speed_y = 0.0f;
 }
@@ -468,6 +480,8 @@ static void tapping_update(struct Gestures* gs,
 	int final_touch_count;
 	int button;
 
+	button = -1;
+
 	final_touch_count = 0;
 
 	if (cfg->trackpad_disable >= 1)
@@ -597,10 +611,16 @@ static void tapping_update(struct Gestures* gs,
 		LOG_TAP("tapping_update: Something went really bad; final_touch_count=%d\n", final_touch_count);
 		button = cfg->tap_4touch - 1;
 	}
-	timeraddms(&gs->time, cfg->tap_hold, &tv_tmp); /* How long button should be hold down */
-	trigger_button_click(gs, button, &tv_tmp);
-	if (cfg->drag_enable && button == 0)
-		trigger_drag_ready(gs, cfg);
+
+	if (IS_VALID_BUTTON(button)) {
+		update_tap_befores(gs, cfg);
+
+		timeraddms(&gs->time, cfg->tap_hold, &tv_tmp); /* How long button should be hold down */
+		trigger_button_click(gs, button, &tv_tmp);
+		if (cfg->drag_enable && button == 0)
+			trigger_drag_ready(gs, cfg);
+
+	}
 
 	gs->move_type = GS_NONE;
 	timeraddms(&gs->time, cfg->gesture_wait, &gs->move_wait);
@@ -615,15 +635,7 @@ static void trigger_move(struct Gestures* gs,
 	if ((gs->move_type == GS_MOVE || timercmp(&gs->time, &gs->move_wait, >=)) && (dx != 0 || dy != 0)) {
 		if (trigger_drag_start(gs, cfg, dx, dy)) {
 
-			if (cfg->tap_1wmv > 0) {
-				timeraddms(&gs->time, cfg->tap_1wmv, &gs->tap1_before);
-			}
-			if (cfg->tap_2wmv > 0) {
-				timeraddms(&gs->time, cfg->tap_2wmv, &gs->tap2_before);
-			}
-			if (cfg->tap_3wmv > 0) {
-				timeraddms(&gs->time, cfg->tap_3wmv, &gs->tap3_before);
-			}
+			update_tap_befores(gs, cfg);
 
 			gs->move_dx = dx*cfg->sensitivity;
 			gs->move_dy = dy*cfg->sensitivity;
@@ -864,15 +876,7 @@ static int trigger_swipe(struct Gestures* gs,
 		goto not_a_swipe;
 	}
 
-	if (cfg->tap_1wmv > 0) {
-		timeraddms(&gs->time, cfg->tap_1wmv, &gs->tap1_before);
-	}
-	if (cfg->tap_2wmv > 0) {
-		timeraddms(&gs->time, cfg->tap_2wmv, &gs->tap2_before);
-	}
-	if (cfg->tap_3wmv > 0) {
-		timeraddms(&gs->time, cfg->tap_3wmv, &gs->tap3_before);
-	}
+	update_tap_befores(gs, cfg);
 
 	// do not trigger lower order swipe if higher one on the go
 	if(move_type_to_trigger < gs->move_type) {
