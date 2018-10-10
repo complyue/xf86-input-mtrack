@@ -172,6 +172,10 @@ struct MConfig {
 	int tap_2bah; // height of the box area for valid 2-finger tap. in percentage, 0 - 100
 	int tap_3bah; // height of the box area for valid 3-finger tap. in percentage, 0 - 100
 
+	int tap_1wmv; // duration time that 1-finger tap allowed after movement: <=0 - disable; >0 - milliseconds
+	int tap_2wmv; // duration time that 2-finger tap allowed after movement: <=0 - disable; >0 - milliseconds
+	int tap_3wmv; // duration time that 3-finger tap allowed after movement: <=0 - disable; >0 - milliseconds
+
 	int tap_1touch;			// What button to emulate for one touch taps? 0 to 32
 	int tap_2touch;			// What button to emulate for two touch taps? 0 to 32
 	int tap_3touch;			// What button to emulate for three touch taps? 0 to 32

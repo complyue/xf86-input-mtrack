@@ -554,21 +554,31 @@ static void tapping_update(struct Gestures* gs,
 
 	switch(final_touch_count){
 	case 1:
-		if(invalid_tap_touches(cfg->tap_1bah, ms, cfg) < 1) {
-			button = cfg->tap_1touch - 1;
+		if(invalid_tap_touches(cfg->tap_1bah, ms, cfg) >= 1) {
+			// all fingers out of valid tap area
+			break;
 		}
+		if (!isepochtime(&gs->tap1_before)) {
+			if (timercmp(&gs->time, &gs->tap1_before, >)) {
+				// too long since last movement
+				break;
+			}
+		} 
+		button = cfg->tap_1touch - 1;
 		break;
 	case 2:
-		// tap is valid if at least 1 finger is in valid area
-		if(invalid_tap_touches(cfg->tap_2bah, ms, cfg) < 2) {
-			button = cfg->tap_2touch - 1;
+		if(invalid_tap_touches(cfg->tap_2bah, ms, cfg) >= 2) {
+			// all fingers out of valid tap area
+			break;
 		}
+		button = cfg->tap_2touch - 1;
 		break;
 	case 3:
-		// tap is valid if at least 1 finger is in valid area
-		if(invalid_tap_touches(cfg->tap_3bah, ms, cfg) < 3) {
-			button = cfg->tap_3touch - 1;
+		if(invalid_tap_touches(cfg->tap_3bah, ms, cfg) >= 3) {
+			// all fingers out of valid tap area
+			break;
 		}
+		button = cfg->tap_3touch - 1;
 		break;
 	case 4: button = cfg->tap_4touch - 1; break;
 	default:
@@ -592,6 +602,17 @@ static void trigger_move(struct Gestures* gs,
 {
 	if ((gs->move_type == GS_MOVE || timercmp(&gs->time, &gs->move_wait, >=)) && (dx != 0 || dy != 0)) {
 		if (trigger_drag_start(gs, cfg, dx, dy)) {
+
+			if (cfg->tap_1wmv > 0) {
+				timeraddms(&gs->time, cfg->tap_1wmv, &gs->tap1_before);
+			}
+			if (cfg->tap_2wmv > 0) {
+				timeraddms(&gs->time, cfg->tap_2wmv, &gs->tap2_before);
+			}
+			if (cfg->tap_3wmv > 0) {
+				timeraddms(&gs->time, cfg->tap_3wmv, &gs->tap3_before);
+			}
+
 			gs->move_dx = dx*cfg->sensitivity;
 			gs->move_dy = dy*cfg->sensitivity;
 			break_coasting(gs);
@@ -829,6 +850,16 @@ static int trigger_swipe(struct Gestures* gs,
 		break;
 	default:
 		goto not_a_swipe;
+	}
+
+	if (cfg->tap_1wmv > 0) {
+		timeraddms(&gs->time, cfg->tap_1wmv, &gs->tap1_before);
+	}
+	if (cfg->tap_2wmv > 0) {
+		timeraddms(&gs->time, cfg->tap_2wmv, &gs->tap2_before);
+	}
+	if (cfg->tap_3wmv > 0) {
+		timeraddms(&gs->time, cfg->tap_3wmv, &gs->tap3_before);
 	}
 
 	// do not trigger lower order swipe if higher one on the go

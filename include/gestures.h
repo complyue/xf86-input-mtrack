@@ -79,6 +79,9 @@ struct Gestures {
 	int tap_touching;
 	int tap_released;
 	struct timeval tap_timeout;
+	struct timeval tap1_before;
+	struct timeval tap2_before;
+	struct timeval tap3_before;
 
 	int move_type;
 	double move_dist;
