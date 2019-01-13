@@ -587,7 +587,7 @@ static void tapping_update(struct Gestures* gs,
 			// all fingers out of valid tap area
 			break;
 		}
-		if (!isepochtime(&gs->tap1_before)) {
+		if (cfg->tap_1actin > 0) {
 			if (timercmp(&gs->time, &gs->tap1_before, >)) {
 				// too long since last movement
 				break;
@@ -600,7 +600,7 @@ static void tapping_update(struct Gestures* gs,
 			// all fingers out of valid tap area
 			break;
 		}
-		if (!isepochtime(&gs->tap2_before)) {
+		if (cfg->tap_2actin > 0) {
 			if (timercmp(&gs->time, &gs->tap2_before, >)) {
 				// too long since last movement
 				break;
@@ -613,7 +613,7 @@ static void tapping_update(struct Gestures* gs,
 			// all fingers out of valid tap area
 			break;
 		}
-		if (!isepochtime(&gs->tap3_before)) {
+		if (cfg->tap_3actin > 0) {
 			if (timercmp(&gs->time, &gs->tap3_before, >)) {
 				// too long since last movement
 				break;
