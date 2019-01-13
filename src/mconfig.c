@@ -53,6 +53,8 @@ void mconfig_defaults(struct MConfig* cfg)
 	cfg->tap_2bah = 100;
 	cfg->tap_3bah = 100;
 
+	cfg->act_cwin = 10;
+	cfg->tap_cact = 50;
 	cfg->tap_1actin = 1000;
 	cfg->tap_2actin = 1000;
 	cfg->tap_3actin = 0;
@@ -223,6 +225,8 @@ void mconfig_configure(struct MConfig* cfg,
 	cfg->tap_2bah = CLAMPVAL(xf86SetIntOption(opts, "TapBAH2", 100), 0, 100);
 	cfg->tap_3bah = CLAMPVAL(xf86SetIntOption(opts, "TapBAH3", 100), 0, 100);
 
+	cfg->act_cwin = CLAMPVAL(xf86SetIntOption(opts, "ContActWin", 10), 0, 50);
+	cfg->tap_cact = CLAMPVAL(xf86SetIntOption(opts, "TapContAct", 50), 0, 600);
 	cfg->tap_1actin = CLAMPVAL(xf86SetIntOption(opts, "Tap1ActIn", 1000), 0, 600000);
 	cfg->tap_2actin = CLAMPVAL(xf86SetIntOption(opts, "Tap2ActIn", 1000), 0, 600000);
 	cfg->tap_3actin = CLAMPVAL(xf86SetIntOption(opts, "Tap3ActIn", 0), 0, 600000);

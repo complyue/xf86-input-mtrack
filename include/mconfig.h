@@ -172,6 +172,8 @@ struct MConfig {
 	int tap_2bah; // height of the box area for valid 2-finger tap. in percentage, 0 - 100
 	int tap_3bah; // height of the box area for valid 3-finger tap. in percentage, 0 - 100
 
+	int act_cwin; // continuous action detection window
+	int tap_cact; // taps can not register before kept in continuous action (moving mostly) - milliseconds
 	int tap_1actin; // max inactive duration that 1-finger taps can register: <=0 - always; >0 - milliseconds
 	int tap_2actin; // max inactive duration that 2-finger taps can register: <=0 - always; >0 - milliseconds
 	int tap_3actin; // max inactive duration that 3-finger taps can register: <=0 - always; >0 - milliseconds

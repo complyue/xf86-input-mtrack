@@ -43,6 +43,21 @@
 #define IS_VALID_BUTTON(x) (x >= 0 && x <= 31)
 
 static void update_tap_befores(struct Gestures* gs, const struct MConfig* cfg) {
+	static int first_act_us = 0, last_act_us = 0;
+	int this_act_us = timertomicro(&gs->time);
+	if(this_act_us - last_act_us > cfg->act_cwin * 1000) {
+		// acting out of the detection window, consider interrupted,
+		// restart continuous action detection from this time
+		first_act_us = last_act_us = this_act_us;
+		return;
+	}
+	last_act_us = this_act_us;
+	if(this_act_us - first_act_us < cfg->tap_cact * 1000) {
+		// not kept in action long enough
+		return;
+	}
+
+	// set tap deadline as needed
 	if (cfg->tap_1actin > 0) {
 		timeraddms(&gs->time, cfg->tap_1actin, &gs->tap1_before);
 	}
